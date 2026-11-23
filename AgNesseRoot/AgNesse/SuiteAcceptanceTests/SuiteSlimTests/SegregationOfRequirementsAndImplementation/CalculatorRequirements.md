@@ -1,9 +1,13 @@
 {
-  "type": "static",
+  "type": "test",
   "tags": [],
   "help": "A sub page with requirements for a calculator.",
   "prune": false
 }
+
+| import |
+| --- |
+| agnesse.slim.test |
 
 | Division | | |
 | --- | --- | --- |
