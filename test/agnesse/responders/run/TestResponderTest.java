@@ -28,8 +28,6 @@ import java.io.File;
 
 import java.util.Properties;
 import java.util.TimeZone;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -504,12 +502,15 @@ public class TestResponderTest {
     assertMessageHasJustOneOccurrenceOf(results, "Output of SetUp");
   }
 
-  private void assertMessageHasJustOneOccurrenceOf(String output, String regexp) {
-    Matcher match = Pattern.compile(regexp, Pattern.MULTILINE | Pattern.DOTALL).matcher(output);
-    match.find();
-    boolean found = match.find();
-    if (found)
-      fail("The regexp <" + regexp + "> was more than once in: " + output + ".");
+  private void assertMessageHasJustOneOccurrenceOf(String output, String phrase) {
+    String marker = "!-" + phrase + "-!\\n";
+    int count = 0;
+    int at = 0;
+    while ((at = output.indexOf(marker, at)) >= 0) {
+      count++;
+      at += marker.length();
+    }
+    assertEquals(output, 1, count);
   }
 
   private void assertMessagesOccurInOrder(String errorLogContent, String... messages) {

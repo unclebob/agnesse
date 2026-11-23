@@ -138,6 +138,65 @@ const wireDisclosure = function (marker) {
   });
 };
 
+const escapeHtml = function (value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+};
+
+const orEmpty = function (value) {
+  if (value) return value;
+  return "";
+};
+
+const symbolText = function (cell) {
+  var secret = cell.symbol.indexOf("SECRET_") === 0;
+  var shown = secret ? "*****" : orEmpty(cell.value);
+  var arrow = secret ? "->" : "<-";
+  return "$" + cell.symbol + arrow + "[" + shown + "]";
+};
+
+const cellStatus = function (cell) {
+  if (cell.status) return cell.status;
+  if (cell.error) return "error";
+  return "";
+};
+
+const comparedText = function (status, actual, expected) {
+  if (status !== "fail" && status !== "error") return "";
+  if (!actual || !expected || actual === expected) return "";
+  return "<span class=\"" + status + "\">[" + escapeHtml(actual) + "] expected ["
+    + escapeHtml(expected) + "]</span>";
+};
+
+const plainText = function (cell) {
+  var compared = comparedText(cellStatus(cell), orEmpty(cell.actual), orEmpty(cell.expected));
+  if (compared) return compared;
+  if (cell.value) return cell.value;
+  if (cell.actual) return cell.actual;
+  return orEmpty(cell.expected);
+};
+
+const withError = function (body, cell) {
+  var message = cell.error ? cell.error.message : "";
+  if (!message) return body;
+  if (!body) return message;
+  return body + " " + message;
+};
+
+const text = function (cell) {
+  if (cell.symbol) return symbolText(cell);
+  return withError(plainText(cell), cell);
+};
+
+const colorExpectation = function (cells, painted) {
+  var last = painted[painted.length - 1];
+  if (!last || last.className) return;
+  if (text(cells[0]) !== "ensure" && text(cells[0]) !== "reject") return;
+  last.className = orEmpty(cells[0].status);
+};
+
 const wireDisclosures = function (scope) {
   var markers = scope.querySelectorAll(".disclosure");
   for (var i = 0; i < markers.length; i++) {
@@ -179,22 +238,6 @@ const wireDisclosures = function (scope) {
     return false;
   }
 
-  function text(cell) {
-    if (cell.symbol) {
-      var secret = cell.symbol.indexOf("SECRET_") === 0;
-      return "$" + cell.symbol + (secret ? "->[*****]" : "<-[" + (cell.value || "") + "]");
-    }
-    var body;
-    if (cell.value) body = cell.value;
-    else {
-      var expected = cell.expected || "";
-      var actual = cell.actual || "";
-      body = (actual && actual !== expected) ? actual : (expected || actual || "");
-    }
-    if (cell.error && cell.error.message) return (body ? body + " " : "") + cell.error.message;
-    return body;
-  }
-
   function shownHtml(value) {
     if (typeof value !== "string" || value.charAt(0) !== "<") return false;
     var pattern = "^<(p|hr|pre|ul|ol|dl|div|h[1-6]|hgroup|address|blockquote|ins|del|object|map|"
@@ -224,12 +267,15 @@ const wireDisclosures = function (scope) {
     var table = el("table", "agnesse-table" + type);
     (block.rows || []).forEach(function (row) {
       var tr = document.createElement("tr");
+      var painted = [];
       (row.cells || []).forEach(function (cell) {
         var status = cell.status || (cell.error ? "error" : "");
         var td = el("td", status, null);
         paint(td, text(cell));
+        painted.push(td);
         tr.appendChild(td);
       });
+      colorExpectation(row.cells || [], painted);
       table.appendChild(tr);
     });
     return table;

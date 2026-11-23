@@ -90,7 +90,7 @@ public class ResultView {
   }
 
   private static String cell(JSONObject cell) {
-    return "<td" + status(cell) + ">" + escape(cellText(cell)) + "</td>";
+    return "<td" + status(cell) + ">" + inner(cell) + "</td>";
   }
 
   private static String status(JSONObject cell) {
@@ -104,19 +104,37 @@ public class ResultView {
     return " class=\"" + status + "\"";
   }
 
-  private static String cellText(JSONObject cell) {
-    String body = body(cell);
+  private static String inner(JSONObject cell) {
+    String compared = compared(cell);
+    String body = compared.isEmpty() ? escape(plain(cell)) : compared;
     String message = errorMessage(cell);
     if (message.isEmpty()) {
       return body;
     }
     if (body.isEmpty()) {
-      return message;
+      return escape(message);
     }
-    return body + " " + message;
+    return body + " " + escape(message);
   }
 
-  private static String body(JSONObject cell) {
+  /** A failed comparison shows the actual beside the expected, as a decision table does. */
+  private static String compared(JSONObject cell) {
+    String status = text(cell, "status");
+    if (status.isEmpty() && hasError(cell)) {
+      status = "error";
+    }
+    if (!"fail".equals(status) && !"error".equals(status)) {
+      return "";
+    }
+    String expected = text(cell, "expected");
+    String actual = text(cell, "actual");
+    if (expected.isEmpty() || actual.isEmpty() || expected.equals(actual)) {
+      return "";
+    }
+    return "<span class=\"" + status + "\">[" + escape(actual) + "] expected [" + escape(expected) + "]</span>";
+  }
+
+  private static String plain(JSONObject cell) {
     String symbol = text(cell, "symbol");
     if (!symbol.isEmpty()) {
       return symbolText(symbol, text(cell, "value"));

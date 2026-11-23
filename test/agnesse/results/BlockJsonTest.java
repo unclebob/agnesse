@@ -101,15 +101,28 @@ public class BlockJsonTest {
   }
 
   @Test
-  public void aScriptCellIsNotCopiedIntoTheResult() {
+  public void aScriptCellKeepsTheWordsOnThePage() {
     MarkdownTable table = MarkdownTable.parse("| script |\n| write | hello |\n");
     table.addColumnToRow(1, "<div class=\"rendered-test\">1.00</div>");
 
     JSONObject block = BlockJson.from(table);
 
-    assertTrue(cell(block, 1, 0).isNull("value"));
-    assertTrue(cell(block, 1, 1).isNull("value"));
+    assertEquals("write", cell(block, 1, 0).getString("value"));
+    assertEquals("hello", cell(block, 1, 1).getString("value"));
     assertTrue(block.toString(), block.toString().contains("rendered-test"));
+  }
+
+  @Test
+  public void anEmptyCellIsNotCopiedAndASecretSymbolIsMasked() {
+    MarkdownTable empty = MarkdownTable.parse("| script | | kept |\n");
+    assertTrue(cell(BlockJson.from(empty), 0, 1).isNull("value"));
+    assertEquals("kept", cell(BlockJson.from(empty), 0, 2).getString("value"));
+
+    MarkdownTable secret = MarkdownTable.parse("| script | token |\n");
+    secret.updateContent(1, 0, SlimTestResult.pass("$SECRET_token<-[hidden]"));
+    JSONObject symbol = cell(BlockJson.from(secret), 0, 1);
+    assertEquals("SECRET_token", symbol.getString("symbol"));
+    assertEquals("*****", symbol.getString("value"));
   }
 
   @Test

@@ -627,6 +627,81 @@ test("a page name is kept whole when the run has no suite root", () => {
   assert.equal(view.summaries.querySelector("a").href, "/.Hidden");
 });
 
+test("a failed comparison shows the actual beside the expected", () => {
+  const view = render([
+    { event: "page-started", path: "Suite.Page" },
+    {
+      event: "table-done",
+      path: "Suite.Page",
+      block: {
+        name: "script",
+        rows: [
+          { cells: [
+            { value: "ensure", status: "pass" },
+            { value: "content contains" },
+            { value: "\"wrong\":1" },
+          ] },
+          { cells: [
+            { value: "reject", status: "fail" },
+            { value: "<script>" },
+          ] },
+          { cells: [
+            { value: "show", status: "pass" },
+            { value: "rendered result" },
+          ] },
+          { cells: [
+            { value: "ensure" },
+            { value: "untouched" },
+          ] },
+          { cells: [
+            { status: "fail", actual: "false", expected: "true" },
+          ] },
+          { cells: [
+            { status: "pass", actual: "2 trials", expected: "1" },
+          ] },
+          { cells: [
+            { status: "fail", actual: "1.00", expected: "1.00" },
+          ] },
+          { cells: [
+            { value: "check", status: "pass" },
+            { status: "fail", actual: "0", expected: "200" },
+          ] },
+          { cells: [] },
+          { cells: [
+            { value: "ensure", status: "fail" },
+            { value: "kept", status: "pass" },
+          ] },
+          { cells: [
+            { error: { message: "only" } },
+            { actual: "nope", error: { message: "later" } },
+          ] },
+        ],
+      },
+    },
+  ]);
+  const cells = view.results.querySelectorAll("td");
+  assert.equal(cells[2].className, "pass");
+  assert.equal(cells[2].textContent, "\"wrong\":1");
+  assert.equal(cells[4].className, "fail");
+  assert.equal(cells[4].textContent, "<script>");
+  assert.equal(cells[6].className, "");
+  assert.equal(cells[8].className, "");
+  assert.equal(cells[9].className, "fail");
+  assert.equal(cells[9].innerHTML.includes("[false] expected [true]"), true);
+  assert.equal(cells[9].innerHTML.includes("<script>"), false);
+  assert.equal(cells[10].className, "pass");
+  assert.equal(cells[10].textContent, "2 trials");
+  assert.equal(cells[11].textContent, "1.00");
+  assert.equal(String(cells[11].textContent).includes("expected"), false);
+  assert.equal(cells[13].className, "fail");
+  assert.equal(cells[13].innerHTML.includes("[0] expected [200]"), true);
+  assert.equal(cells[15].className, "pass");
+  assert.equal(cells[15].textContent, "kept");
+  assert.equal(cells[16].textContent, "only");
+  assert.equal(cells[16].className, "error");
+  assert.equal(cells[17].textContent, "nope later");
+});
+
 test("a rendered result is html and ordinary text stays text", () => {
   const view = render([
     { event: "page-started", path: "Suite.Page" },

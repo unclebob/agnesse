@@ -31,7 +31,7 @@ public class ResultViewTest {
 
     assertTrue(html, HtmlUtil.isValidTableCellContent(html));
     assertTrue(html, html.contains("<td>price</td>"));
-    assertTrue(html, html.contains("<td class=\"fail\">1.00</td>"));
+    assertTrue(html, html.contains("<span class=\"fail\">[1.00] expected [true]</span>"));
     assertTrue(html, html.contains("drew 2.43; shrunk"));
     assertTrue(html, html.contains("&lt;script&gt;alert(1)&lt;/script&gt;"));
     assertTrue(html, html.contains("$SECRET_token-&gt;[*****]"));
@@ -50,6 +50,31 @@ public class ResultViewTest {
     assertTrue(html, html.contains("<td>1</td>"));
     assertTrue(HtmlUtil.isValidTableCellContent(ResultView.html("")));
     assertTrue(HtmlUtil.isValidTableCellContent(ResultView.html("not json")));
+  }
+
+  @Test
+  public void aRunWithNoPagesAndAPageWithNoBlocksStayEmpty() {
+    assertFalse(ResultView.html("{\"run\":{}}").contains("<td"));
+    assertFalse(ResultView.html("{\"run\":{\"pages\":[{\"path\":\"P\"}]}}").contains("<td"));
+    String html = ResultView.html("\n{\"event\":\"output\",\"text\":\"kept\"}\n");
+    assertTrue(html, html.contains("kept"));
+  }
+
+  @Test
+  public void aPassShowsTheResultAndAMatchingFailureStaysPlain() {
+    String html = ResultView.html(
+      "{\"event\":\"table-done\",\"block\":{\"rows\":[{\"cells\":["
+      + "{\"status\":\"pass\",\"actual\":\"2 trials\",\"expected\":\"1\"},"
+      + "{\"status\":\"fail\",\"actual\":\"1.00\",\"expected\":\"1.00\"},"
+      + "{\"status\":\"fail\",\"expected\":\"true\"},"
+      + "{\"status\":\"error\",\"actual\":\"false\",\"expected\":\"true\"}"
+      + "]}]}}");
+    assertTrue(html, html.contains("<td class=\"pass\">2 trials</td>"));
+    assertTrue(html, html.contains("<td class=\"fail\">1.00</td>"));
+    assertTrue(html, html.contains("<td class=\"fail\">true</td>"));
+    assertTrue(html, html.contains("<span class=\"error\">[false] expected [true]</span>"));
+    assertFalse(html, html.contains("expected [1]"));
+    assertFalse(html, html.contains("expected [1.00]"));
   }
 
   @Test

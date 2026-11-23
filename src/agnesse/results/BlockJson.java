@@ -80,25 +80,13 @@ public final class BlockJson {
     return error;
   }
 
-  /**
-   * Property tables keep the words that were not results, so the generator and
-   * the shrunk row can both be read. A rendered result is kept wherever it is
-   * shown. Other cells stay out of the document, so a script cell is not a
-   * second copy of its output.
-   */
+  /** Every cell keeps the words written on the page, unless a result replaces them. */
   private static String keptText(MarkdownTable table, int column, int row) {
     String original = table.originalCell(column, row);
-    if (original != null && original.startsWith("<div class=\"rendered-test\"")) {
-      return original;
+    if (original.isEmpty()) {
+      return null;
     }
-    if (propertyTable(table) && original != null && !original.isEmpty()) {
-      return original;
-    }
-    return null;
-  }
-
-  private static boolean propertyTable(MarkdownTable table) {
-    return table.originalCell(0, 0).startsWith("property");
+    return original;
   }
 
   /** A result keeps its actual text. A kept cell that was never written keeps its words. */
