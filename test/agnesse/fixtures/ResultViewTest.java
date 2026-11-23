@@ -61,6 +61,32 @@ public class ResultViewTest {
   }
 
   @Test
+  public void aScenarioStaysCollapsedAndKeepsTheBodyBesideTheCall() {
+    String html = ResultView.html(
+      "{\"event\":\"table-done\",\"block\":{\"rows\":[{\"cells\":[{\"value\":\"pass\"}],"
+      + "\"scenario\":{\"status\":\"pass\",\"blocks\":[{\"rows\":[{\"cells\":["
+      + "{\"status\":\"fail\",\"actual\":\"no\",\"expected\":\"yes\"}]}]}]}}]}}");
+    assertTrue(html, html.contains("<details class=\"scenario-call pass\">"));
+    assertTrue(html, html.contains("class=\"when-closed\">▸</span>"));
+    assertTrue(html, html.contains("class=\"when-open\">▾</span>"));
+    assertTrue(html, html.contains("aria-expanded=\"false\""));
+    assertFalse(html, html.contains("<details class=\"scenario-call pass\" open>"));
+    assertTrue(html, html.contains("[no] expected [yes]"));
+    assertTrue(html, html.contains(">pass</td>"));
+  }
+
+  @Test
+  public void aScenarioWithoutAssertionsHasNoColor() {
+    String html = ResultView.html(
+      "{\"event\":\"table-done\",\"block\":{\"rows\":[{\"cells\":[{\"value\":\"note\"}],"
+      + "\"scenario\":{\"status\":null,\"blocks\":[{\"rows\":[{\"cells\":[{\"value\":\"show\"}]}]}]}}]}}");
+    assertTrue(html, html.contains("<details class=\"scenario-call\">"));
+    assertFalse(html, html.contains("scenario-call pass"));
+    assertFalse(html, html.contains("scenario-call fail"));
+    assertFalse(html, html.contains("scenario-call error"));
+  }
+
+  @Test
   public void aPassShowsTheResultAndAMatchingFailureStaysPlain() {
     String html = ResultView.html(
       "{\"event\":\"table-done\",\"block\":{\"rows\":[{\"cells\":["

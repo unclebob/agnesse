@@ -75,9 +75,6 @@ public class HtmlSlimTestSystem extends SlimTestSystem {
 
   private void publishTree(TestPage page, MarkdownTable table) {
     publishTable(page, table);
-    for (MarkdownTable child : table.childTables()) {
-      publishTree(page, child);
-    }
   }
 
   private String createHtmlResults(SlimTable startWithTable, SlimTable stopBeforeTable) {

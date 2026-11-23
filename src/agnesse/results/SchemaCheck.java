@@ -52,6 +52,9 @@ public final class SchemaCheck {
 
   private static int[] tally(JSONArray blocks) {
     int[] found = new int[5];
+    if (blocks == null) {
+      return found;
+    }
     for (int i = 0; i < blocks.length(); i++) {
       JSONObject block = blocks.getJSONObject(i);
       if ("table-failure".equals(block.optString("status", ""))) {
@@ -59,9 +62,14 @@ public final class SchemaCheck {
       }
       JSONArray rows = block.getJSONArray("rows");
       for (int row = 0; row < rows.length(); row++) {
-        JSONArray cells = rows.getJSONObject(row).getJSONArray("cells");
+        JSONObject recorded = rows.getJSONObject(row);
+        JSONArray cells = recorded.getJSONArray("cells");
         for (int column = 0; column < cells.length(); column++) {
           tallyCell(found, cells.getJSONObject(column).optString("status", ""));
+        }
+        JSONObject scenario = recorded.optJSONObject("scenario");
+        if (scenario != null) {
+          add(found, tally(scenario.optJSONArray("blocks")));
         }
       }
     }

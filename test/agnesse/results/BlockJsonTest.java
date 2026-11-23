@@ -3,10 +3,12 @@ package agnesse.results;
 import agnesse.testsystems.slim.MarkdownTable;
 import agnesse.testsystems.slim.results.SlimExceptionResult;
 import agnesse.testsystems.slim.results.SlimTestResult;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class BlockJsonTest {
@@ -137,6 +139,57 @@ public class BlockJsonTest {
   }
 
   @Test
+  public void aScenarioCallKeepsItsBodyAndColorsItFromNestedAssertions() {
+    MarkdownTable parent = MarkdownTable.parse("| script |\n| pass |\n| fail |\n| note |\n| boom |\n");
+    parent.appendChildTable(1, checked("ok", "ok", true));
+    parent.appendChildTable(2, checked("no", "yes", false));
+    parent.appendChildTable(3, MarkdownTable.parse("| script |\n| show |\n"));
+    MarkdownTable ignored = MarkdownTable.parse("| script |\n| skip |\n");
+    ignored.updateContent(0, 1, SlimTestResult.ignore("skip"));
+    MarkdownTable holder = MarkdownTable.parse("| script |\n| again |\n");
+    holder.appendChildTable(1, ignored);
+    parent.appendChildTable(1, holder);
+    parent.appendChildTable(4, errored());
+
+    JSONObject block = BlockJson.from(parent);
+
+    assertFalse(block.getJSONArray("rows").getJSONObject(0).has("scenario"));
+    assertEquals("pass", scenario(block, 1).getString("status"));
+    assertEquals("fail", scenario(block, 2).getString("status"));
+    assertTrue(scenario(block, 3).isNull("status"));
+    assertEquals("error", scenario(block, 4).getString("status"));
+    assertEquals("ok", scenario(block, 1).getJSONArray("blocks").getJSONObject(0)
+      .getJSONArray("rows").getJSONObject(1).getJSONArray("cells").getJSONObject(1).getString("actual"));
+    assertEquals(0, block.getJSONObject("counts").getInt("right"));
+    assertEquals(1, PageCounts.counts(new org.json.JSONArray().put(block)).getInt("right"));
+    assertEquals(1, PageCounts.counts(new org.json.JSONArray().put(block)).getInt("wrong"));
+    assertEquals(1, PageCounts.counts(new org.json.JSONArray().put(block)).getInt("ignored"));
+    assertEquals(1, PageCounts.counts(new org.json.JSONArray().put(block)).getInt("exceptions"));
+  }
+
+  @Test
+  public void aNestedTableFailureStillCountsOnThePage() {
+    MarkdownTable parent = MarkdownTable.parse("| script |\n| call |\n");
+    MarkdownTable broken = MarkdownTable.parse("| script | Missing |\n");
+    broken.updateContent(1, 0, new SlimExceptionResult("id", "NO_CLASS Missing"));
+    parent.appendChildTable(1, broken);
+    JSONObject quiet = new JSONObject()
+      .put("counts", new JSONObject().put("right", 0).put("wrong", 0).put("ignored", 0).put("exceptions", 0))
+      .put("status", "pass")
+      .put("rows", new JSONArray().put(new JSONObject()
+        .put("cells", new JSONArray())
+        .put("scenario", new JSONObject().put("status", JSONObject.NULL))));
+    JSONObject bare = new JSONObject()
+      .put("counts", new JSONObject().put("right", 0).put("wrong", 0).put("ignored", 0).put("exceptions", 0))
+      .put("status", "pass");
+    JSONArray blocks = new JSONArray().put(BlockJson.from(parent)).put(quiet).put(bare);
+    JSONObject counts = PageCounts.counts(blocks);
+    assertEquals(1, counts.getInt("tableFailures"));
+    assertEquals(0, counts.getInt("exceptions"));
+    assertEquals(0, counts.getInt("right"));
+  }
+
+  @Test
   public void anEmptyTableHasNoName() {
     JSONObject block = BlockJson.from(MarkdownTable.parse(""));
     assertEquals("", block.getString("name"));
@@ -145,5 +198,23 @@ public class BlockJsonTest {
 
   private static JSONObject cell(JSONObject block, int row, int column) {
     return block.getJSONArray("rows").getJSONObject(row).getJSONArray("cells").getJSONObject(column);
+  }
+
+  private static JSONObject scenario(JSONObject block, int row) {
+    return block.getJSONArray("rows").getJSONObject(row).getJSONObject("scenario");
+  }
+
+  private static MarkdownTable checked(String actual, String expected, boolean pass) {
+    MarkdownTable table = MarkdownTable.parse("| script |\n| check | value |\n");
+    table.updateContent(1, 1, pass
+      ? (SlimTestResult) SlimTestResult.pass(actual, expected)
+      : SlimTestResult.fail(actual, expected));
+    return table;
+  }
+
+  private static MarkdownTable errored() {
+    MarkdownTable table = MarkdownTable.parse("| script |\n| check | value |\n");
+    table.updateContent(1, 1, SlimTestResult.error("boom", "x"));
+    return table;
   }
 }

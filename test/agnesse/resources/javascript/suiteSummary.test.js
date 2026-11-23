@@ -97,6 +97,7 @@ function createElement(tag) {
     el.attributes = el.attributes || {};
     el.attributes[name] = value;
   };
+  el.getAttribute = (name) => (el.attributes || {})[name];
   el.appendChild = (child) => {
     child.parentNode = el;
     el.children.push(child);
@@ -702,6 +703,77 @@ test("a failed comparison shows the actual beside the expected", () => {
   assert.equal(cells[17].textContent, "nope later");
 });
 
+test("a scenario call is collapsed until its icon is pressed", () => {
+  const view = render([
+    { event: "page-started", path: "Suite.Page" },
+    {
+      event: "table-done",
+      path: "Suite.Page",
+      origin: "SetUp",
+      block: {
+        name: "script",
+        rows: [
+          { cells: [{ value: "pass" }], scenario: {
+            status: "pass",
+            blocks: [{ name: "script", status: "pass", rows: [{ cells: [
+              { value: "check" },
+              { status: "pass", actual: "ok", expected: "ok" },
+            ] }] }],
+          } },
+          { cells: [{ value: "fail" }], scenario: {
+            status: "fail",
+            blocks: [{ name: "script", status: "fail", rows: [{ cells: [
+              { status: "fail", actual: "no", expected: "yes" },
+            ] }] }],
+          } },
+          { cells: [{ value: "note" }], scenario: {
+            status: null,
+            blocks: [{ name: "script", rows: [{ cells: [{ value: "show" }] }] }],
+          } },
+          { cells: [{ value: "boom" }], scenario: {
+            status: "error",
+            blocks: [{ name: "script", status: "error", rows: [{ cells: [
+              { status: "error", actual: "bad", expected: "good" },
+            ] }] }],
+          } },
+        ],
+      },
+    },
+  ]);
+  const calls = view.results.querySelectorAll("details.scenario-call");
+  assert.equal(calls.length, 4);
+  assert.equal(calls[0].open, undefined);
+  assert.equal(calls[0].className, "scenario-call pass");
+  assert.equal(calls[1].className, "scenario-call fail");
+  assert.equal(calls[2].className, "scenario-call");
+  assert.equal(calls[3].className, "scenario-call error");
+  assert.equal(calls[0].querySelector(".when-closed").textContent, "▸");
+  assert.equal(calls[0].querySelector(".when-open").textContent, "▾");
+  assert.equal(calls[0].querySelector(".scenario-toggle").getAttribute("aria-expanded"), "false");
+  assert.equal(calls[1].querySelector("td.fail").innerHTML.includes("[no] expected [yes]"), true);
+  assert.equal(view.results.querySelector("details.agnesse-section").open, true);
+  const button = calls[0].querySelector(".when-closed");
+  view.document.dispatchEvent({
+    type: "click",
+    target: button,
+    preventDefault() {},
+    stopPropagation() {},
+  });
+  assert.equal(calls[0].open, true);
+  assert.equal(calls[0].querySelector(".scenario-toggle").getAttribute("aria-expanded"), "true");
+  view.document.dispatchEvent({
+    type: "click",
+    target: button,
+    preventDefault() {},
+    stopPropagation() {},
+  });
+  assert.equal(calls[0].open, false);
+  view.document.dispatchEvent({ type: "click", target: view.document.body, preventDefault() {}, stopPropagation() {} });
+  const loose = createElement("button");
+  loose.className = "scenario-toggle";
+  view.document.dispatchEvent({ type: "click", target: loose, preventDefault() {}, stopPropagation() {} });
+});
+
 test("a rendered result is html and ordinary text stays text", () => {
   const view = render([
     { event: "page-started", path: "Suite.Page" },
@@ -841,6 +913,37 @@ function navControl(id, className) {
   }
   return el;
 }
+
+test("error navigation opens a section and leaves a scenario call collapsed", () => {
+  const view = render([
+    { event: "page-started", path: "Suite.Child" },
+    {
+      event: "table-done",
+      path: "Suite.Child",
+      origin: "SetUp",
+      block: {
+        name: "script",
+        rows: [{ cells: [{ value: "fails" }], scenario: {
+          status: "fail",
+          blocks: [{ name: "script", status: "fail", rows: [{ cells: [
+            { status: "fail", actual: "no", expected: "yes" },
+          ] }] }],
+        } }],
+      },
+    },
+    { event: "run-done" },
+  ], (next) => {
+    next.document.body.appendChild(navControl("error-nav-text"));
+    next.document.body.appendChild(navControl("error-nav-max"));
+    next.document.body.appendChild(navControl("error-nav", "hidden"));
+    next.document.body.appendChild(navControl("error-nav-prev"));
+    next.document.body.appendChild(navControl("error-nav-next"));
+  });
+  const section = view.results.querySelector("details.agnesse-section");
+  const call = view.results.querySelector("details.scenario-call");
+  assert.equal(section.open, true);
+  assert.ok(!call.open);
+});
 
 test("error navigation walks failing cells and opens their section", () => {
   const view = render([

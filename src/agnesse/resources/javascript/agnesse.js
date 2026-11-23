@@ -128,7 +128,9 @@ const appendSummaryRow = function (doc, table, event, root) {
 
 const setOpen = function (details, open) {
   details.open = open;
-  details.querySelector(".disclosure").setAttribute("aria-expanded", open ? "true" : "false");
+  var marker = details.querySelector(".disclosure");
+  if (!marker) return;
+  marker.setAttribute("aria-expanded", open ? "true" : "false");
 };
 
 const wireDisclosure = function (marker) {
@@ -229,11 +231,14 @@ const wireDisclosures = function (scope) {
     if (status === "fail" || status === "error" || status === "table-failure") return true;
     var rows = block.rows || [];
     for (var r = 0; r < rows.length; r++) {
-      var cells = rows[r].cells || [];
+      var row = rows[r];
+      var cells = row.cells || [];
       for (var c = 0; c < cells.length; c++) {
         var cell = cells[c];
         if (cell.status === "fail" || cell.status === "error" || cell.error) return true;
       }
+      var scenario = row.scenario;
+      if (scenario && shouldOpen(scenario.blocks || [])) return true;
     }
     return false;
   }
@@ -266,19 +271,74 @@ const wireDisclosures = function (scope) {
     var type = block.name ? " " + block.name : "";
     var table = el("table", "agnesse-table" + type);
     (block.rows || []).forEach(function (row) {
-      var tr = document.createElement("tr");
-      var painted = [];
-      (row.cells || []).forEach(function (cell) {
-        var status = cell.status || (cell.error ? "error" : "");
-        var td = el("td", status, null);
-        paint(td, text(cell));
-        painted.push(td);
-        tr.appendChild(td);
-      });
-      colorExpectation(row.cells || [], painted);
-      table.appendChild(tr);
+      table.appendChild(row.scenario ? scenarioRow(row) : plainRow(row));
     });
     return table;
+  }
+
+  function plainRow(row) {
+    var tr = document.createElement("tr");
+    var painted = [];
+    (row.cells || []).forEach(function (cell) {
+      painted.push(paintCell(tr, cell));
+    });
+    colorExpectation(row.cells || [], painted);
+    return tr;
+  }
+
+  function paintCell(tr, cell) {
+    var status = cell.status || (cell.error ? "error" : "");
+    var td = el("td", status, null);
+    paint(td, text(cell));
+    tr.appendChild(td);
+    return td;
+  }
+
+  function scenarioRow(row) {
+    var cells = row.cells || [];
+    var details = el("details", scenarioClass(row.scenario.status));
+    var summary = el("summary");
+    var button = el("button", "scenario-toggle", null);
+    button.setAttribute("type", "button");
+    button.setAttribute("aria-expanded", "false");
+    button.appendChild(el("span", "when-closed", "▸"));
+    button.appendChild(el("span", "when-open", "▾"));
+    summary.appendChild(button);
+    var line = el("table", "agnesse-table scenario-line");
+    line.appendChild(plainRow(row));
+    summary.appendChild(line);
+    details.appendChild(summary);
+    var body = el("div", "scenario-body");
+    (row.scenario.blocks || []).forEach(function (child) {
+      body.appendChild(renderBlock(child));
+    });
+    details.appendChild(body);
+    var td = el("td", "", null);
+    td.colSpan = cells.length > 0 ? cells.length : 1;
+    td.appendChild(details);
+    var tr = document.createElement("tr");
+    tr.appendChild(td);
+    return tr;
+  }
+
+  function scenarioClass(status) {
+    if (status === "pass" || status === "fail" || status === "error") {
+      return "scenario-call " + status;
+    }
+    return "scenario-call";
+  }
+
+  function toggleScenario(event) {
+    var target = event.target;
+    if (!target || !target.closest) return;
+    var button = target.closest(".scenario-toggle");
+    if (!button) return;
+    var details = button.closest("details");
+    if (!details) return;
+    if (event.preventDefault) event.preventDefault();
+    if (event.stopPropagation) event.stopPropagation();
+    details.open = !details.open;
+    button.setAttribute("aria-expanded", details.open ? "true" : "false");
   }
 
   function sectionHref(event, title) {
@@ -454,8 +514,13 @@ const wireDisclosures = function (scope) {
       index = (next + errors.length) % errors.length;
       var cell = errors[index];
       cell.classList.add("selected-error");
-      var opened = cell.closest("details");
-      if (opened) setOpen(opened, true);
+      var opened = cell.parentNode;
+      while (opened) {
+        if (opened.tagName === "DETAILS" && opened.className.indexOf("scenario-call") < 0) {
+          setOpen(opened, true);
+        }
+        opened = opened.parentNode;
+      }
       field.value = String(index + 1);
       cell.scrollIntoView({ block: "center" });
     }
@@ -479,6 +544,8 @@ const wireDisclosures = function (scope) {
       return "There is a test or suite currently running.\nAre you sure you want to navigate away from this page?";
     }
   };
+
+  document.addEventListener("click", toggleScenario);
 
   document.addEventListener("DOMContentLoaded", function () {
     wireDisclosures(document);

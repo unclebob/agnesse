@@ -71,7 +71,8 @@ public final class ResultSections {
         return true;
       }
     }
-    return false;
+    JSONObject scenario = row.optJSONObject("scenario");
+    return scenario != null && shouldOpen(scenario.optJSONArray("blocks"));
   }
 
   private static boolean structural(String name) {

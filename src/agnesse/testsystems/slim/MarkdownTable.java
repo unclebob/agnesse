@@ -98,6 +98,17 @@ public final class MarkdownTable implements Table {
     return tables;
   }
 
+  /** Scenario bodies attached to one call row, in the order they ran. */
+  public List<MarkdownTable> children(int row) {
+    List<MarkdownTable> found = new ArrayList<>();
+    for (PlacedChild child : children) {
+      if (child.row == row) {
+        found.add(child.table);
+      }
+    }
+    return found;
+  }
+
   public void markNotAnAssertion(int column, int row) {
     Cell cell = rows.get(row).get(column);
     if (cell.record != null) {

@@ -76,17 +76,46 @@ public class ResultView {
     JSONArray rows = block.optJSONArray("rows");
     if (rows != null) {
       for (int row = 0; row < rows.length(); row++) {
-        html.append("<tr>");
-        JSONArray cells = rows.getJSONObject(row).optJSONArray("cells");
-        if (cells != null) {
-          for (int column = 0; column < cells.length(); column++) {
-            html.append(cell(cells.getJSONObject(column)));
-          }
-        }
-        html.append("</tr>");
+        html.append(rowHtml(rows.getJSONObject(row)));
       }
     }
     return html.append("</table>").toString();
+  }
+
+  private static String rowHtml(JSONObject row) {
+    JSONArray cells = row.optJSONArray("cells");
+    if (row.isNull("scenario")) {
+      return "<tr>" + cellsHtml(cells) + "</tr>";
+    }
+    JSONObject scenario = row.getJSONObject("scenario");
+    int span = cells == null ? 1 : Math.max(1, cells.length());
+    return "<tr><td colspan=\"" + span + "\">" + scenarioHtml(scenario, cellsHtml(cells)) + "</td></tr>";
+  }
+
+  private static String cellsHtml(JSONArray cells) {
+    StringBuilder html = new StringBuilder();
+    if (cells != null) {
+      for (int column = 0; column < cells.length(); column++) {
+        html.append(cell(cells.getJSONObject(column)));
+      }
+    }
+    return html.toString();
+  }
+
+  private static String scenarioHtml(JSONObject scenario, String cells) {
+    String status = text(scenario, "status");
+    String cls = status.isEmpty() ? "scenario-call" : "scenario-call " + status;
+    StringBuilder body = new StringBuilder();
+    JSONArray blocks = scenario.optJSONArray("blocks");
+    if (blocks != null) {
+      for (int i = 0; i < blocks.length(); i++) {
+        body.append(table(blocks.getJSONObject(i)));
+      }
+    }
+    return "<details class=\"" + cls + "\"><summary><button type=\"button\" class=\"scenario-toggle\" aria-expanded=\"false\">"
+      + "<span class=\"when-closed\">▸</span><span class=\"when-open\">▾</span></button>"
+      + "<table class=\"agnesse-table scenario-line\"><tr>" + cells + "</tr></table></summary><div class=\"scenario-body\">"
+      + body + "</div></details>";
   }
 
   private static String cell(JSONObject cell) {

@@ -38,7 +38,93 @@ public final class BlockJson {
       outcome.note(record);
       cells.put(cellJson(record, keptText(table, column, row), row + 1, column + 1));
     }
-    return new JSONObject().put("cells", cells);
+    JSONObject recorded = new JSONObject().put("cells", cells);
+    JSONArray nested = nested(table, row);
+    if (nested.length() > 0) {
+      recorded.put("scenario", new JSONObject().put("status", scenarioStatus(nested)).put("blocks", nested));
+    }
+    return recorded;
+  }
+
+  private static JSONArray nested(MarkdownTable table, int row) {
+    JSONArray blocks = new JSONArray();
+    for (MarkdownTable child : table.children(row)) {
+      blocks.put(from(child));
+    }
+    return blocks;
+  }
+
+  /** Green when every nested assertion passed, red when one failed, orange on an error. */
+  static Object scenarioStatus(JSONArray blocks) {
+    Marks marks = new Marks();
+    marks.read(blocks);
+    return marks.status();
+  }
+
+  private static final class Marks {
+    private boolean assertion;
+    private boolean failed;
+    private boolean erred;
+
+    private void read(JSONArray blocks) {
+      for (int i = 0; i < blocks.length(); i++) {
+        readBlock(blocks.getJSONObject(i));
+      }
+    }
+
+    private void readBlock(JSONObject block) {
+      JSONArray rows = block.getJSONArray("rows");
+      for (int row = 0; row < rows.length(); row++) {
+        readRow(rows.getJSONObject(row));
+      }
+    }
+
+    private void readRow(JSONObject row) {
+      JSONArray cells = row.optJSONArray("cells");
+      if (cells != null) {
+        for (int column = 0; column < cells.length(); column++) {
+          note(cells.getJSONObject(column));
+        }
+      }
+      JSONObject scenario = row.optJSONObject("scenario");
+      if (scenario != null) {
+        read(scenario.optJSONArray("blocks"));
+      }
+    }
+
+    private void note(JSONObject cell) {
+      String status = cell.optString("status", "");
+      if ("error".equals(status) || erred(cell)) {
+        erred = true;
+        assertion = true;
+        return;
+      }
+      if ("fail".equals(status)) {
+        failed = true;
+        assertion = true;
+        return;
+      }
+      if ("pass".equals(status) || "ignore".equals(status)) {
+        assertion = true;
+      }
+    }
+
+    private static boolean erred(JSONObject cell) {
+      return cell.has("error") && !cell.isNull("error") && cell.get("error") instanceof JSONObject;
+    }
+
+    private Object status() {
+      if (erred) {
+        return "error";
+      }
+      if (failed) {
+        return "fail";
+      }
+      if (assertion) {
+        return "pass";
+      }
+      return JSONObject.NULL;
+    }
   }
 
   private static Object jsonStatus(CellRecord record) {

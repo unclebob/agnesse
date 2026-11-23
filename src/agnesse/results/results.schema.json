@@ -69,7 +69,17 @@
       "additionalProperties": false,
       "required": ["cells"],
       "properties": {
-        "cells": { "type": "array", "items": { "$ref": "#/$defs/cell" } }
+        "cells": { "type": "array", "items": { "$ref": "#/$defs/cell" } },
+        "scenario": { "$ref": "#/$defs/scenario" }
+      }
+    },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "blocks"],
+      "properties": {
+        "status": { "enum": ["pass", "fail", "error", null] },
+        "blocks": { "type": "array", "items": { "$ref": "#/$defs/block" } }
       }
     },
     "block": {

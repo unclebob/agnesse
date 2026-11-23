@@ -72,6 +72,19 @@ public class ResultSectionsTest {
   }
 
   @Test
+  public void aNestedScenarioFailureOpensTheSection() {
+    JSONObject child = new JSONObject().put("status", "fail").put("rows", new JSONArray());
+    JSONObject scenario = new JSONObject().put("status", "fail").put("blocks", new JSONArray().put(child));
+    JSONObject row = new JSONObject().put("cells", new JSONArray()).put("scenario", scenario);
+    JSONObject block = new JSONObject().put("status", "pass").put("rows", new JSONArray().put(row));
+    assertTrue(ResultSections.shouldOpen(new JSONArray().put(block)));
+    JSONObject quiet = new JSONObject().put("status", JSONObject.NULL).put("blocks", new JSONArray());
+    JSONObject plain = new JSONObject().put("cells", new JSONArray()).put("scenario", quiet);
+    JSONObject calm = new JSONObject().put("status", "pass").put("rows", new JSONArray().put(plain));
+    assertFalse(ResultSections.shouldOpen(new JSONArray().put(calm)));
+  }
+
+  @Test
   public void aPassingBlockOpensWhenACellFailedOrRecordedAnError() {
     assertTrue(ResultSections.shouldOpen(new JSONArray().put(passBlockWithCell("fail", null))));
     assertTrue(ResultSections.shouldOpen(new JSONArray().put(passBlockWithCell("error", null))));

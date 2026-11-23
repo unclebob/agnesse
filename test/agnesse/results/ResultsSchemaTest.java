@@ -65,6 +65,44 @@ public class ResultsSchemaTest {
     SchemaCheck.countsMatchCells(run);
   }
 
+  @Test
+  public void nestedScenarioCellsCountTowardThePage() {
+    JSONObject cell = new JSONObject().put("row", 1).put("column", 1).put("status", "fail");
+    JSONObject child = new JSONObject().put("name", "script").put("status", "fail")
+      .put("counts", new JSONObject().put("right", 0).put("wrong", 1).put("ignored", 0).put("exceptions", 0))
+      .put("rows", new JSONArray().put(new JSONObject().put("cells", new JSONArray().put(cell))));
+    JSONObject scenario = new JSONObject().put("status", "fail").put("blocks", new JSONArray().put(child));
+    JSONObject row = new JSONObject().put("cells", new JSONArray().put(
+      new JSONObject().put("row", 1).put("column", 1).put("status", "pass"))).put("scenario", scenario);
+    JSONObject missing = new JSONObject().put("status", JSONObject.NULL);
+    JSONObject plain = new JSONObject().put("cells", new JSONArray()).put("scenario", missing);
+    JSONObject block = new JSONObject().put("name", "script").put("status", "pass")
+      .put("counts", new JSONObject().put("right", 1).put("wrong", 0).put("ignored", 0).put("exceptions", 0))
+      .put("rows", new JSONArray().put(row).put(plain));
+    JSONObject counts = PageCounts.counts(new JSONArray().put(block));
+    JSONObject page = new JSONObject().put("path", "Demo").put("status", "fail").put("blocks", new JSONArray().put(block))
+      .put("counts", counts);
+    SchemaCheck.countsMatchCells(new JSONObject().put("pages", new JSONArray().put(page)).put("counts", counts));
+    assertEquals(1, counts.getInt("right"));
+    assertEquals(1, counts.getInt("wrong"));
+  }
+
+  @Test
+  public void aPassingPageCannotHideATableFailure() {
+    JSONObject broken = new JSONObject().put("name", "Missing").put("status", "table-failure")
+      .put("counts", new JSONObject().put("right", 0).put("wrong", 0).put("ignored", 0).put("exceptions", 0))
+      .put("rows", new JSONArray());
+    JSONObject counts = PageCounts.counts(new JSONArray().put(broken));
+    JSONObject page = new JSONObject().put("path", "Demo").put("status", "pass")
+      .put("blocks", new JSONArray().put(broken)).put("counts", counts);
+    try {
+      SchemaCheck.countsMatchCells(new JSONObject().put("pages", new JSONArray().put(page)).put("counts", counts));
+      throw new AssertionError("a table failure on a passing page");
+    } catch (IllegalStateException expected) {
+      assertTrue(expected.getMessage(), expected.getMessage().contains("table failure"));
+    }
+  }
+
   @Test(expected = IllegalStateException.class)
   public void cellTotalsThatDoNotMatchPageCountsAreRejected() throws Exception {
     SchemaCheck.main(new String[]{"test/agnesse/results/counts-do-not-match-cells.json"});

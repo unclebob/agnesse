@@ -15,23 +15,42 @@ public final class PageCounts {
   }
 
   public static JSONObject counts(JSONArray blocks) {
-    int right = 0;
-    int wrong = 0;
-    int ignored = 0;
-    int exceptions = 0;
-    int tableFailures = 0;
+    int[] found = new int[5];
+    addBlocks(blocks, found);
+    return counts(found[0], found[1], found[2], found[3], found[4]);
+  }
+
+  private static void addBlocks(JSONArray blocks, int[] found) {
+    if (blocks == null) {
+      return;
+    }
     for (int i = 0; i < blocks.length(); i++) {
-      JSONObject block = blocks.getJSONObject(i);
-      JSONObject blockCounts = block.getJSONObject("counts");
-      right += blockCounts.getInt("right");
-      wrong += blockCounts.getInt("wrong");
-      ignored += blockCounts.getInt("ignored");
-      exceptions += blockCounts.getInt("exceptions");
-      if ("table-failure".equals(block.optString("status", ""))) {
-        tableFailures++;
+      addBlock(blocks.getJSONObject(i), found);
+    }
+  }
+
+  private static void addBlock(JSONObject block, int[] found) {
+    JSONObject blockCounts = block.getJSONObject("counts");
+    found[0] += blockCounts.getInt("right");
+    found[1] += blockCounts.getInt("wrong");
+    found[2] += blockCounts.getInt("ignored");
+    found[3] += blockCounts.getInt("exceptions");
+    if ("table-failure".equals(block.optString("status", ""))) {
+      found[4]++;
+    }
+    addNested(block.optJSONArray("rows"), found);
+  }
+
+  private static void addNested(JSONArray rows, int[] found) {
+    if (rows == null) {
+      return;
+    }
+    for (int i = 0; i < rows.length(); i++) {
+      JSONObject scenario = rows.getJSONObject(i).optJSONObject("scenario");
+      if (scenario != null) {
+        addBlocks(scenario.optJSONArray("blocks"), found);
       }
     }
-    return counts(right, wrong, ignored, exceptions, tableFailures);
   }
 
   public static JSONObject counts(int right, int wrong, int ignored, int exceptions, int tableFailures) {
