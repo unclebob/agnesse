@@ -61,10 +61,14 @@ public final class CellRecord {
   public static CellRecord error(SlimExceptionResult exception) {
     ExecutionResult execution = exception.getExecutionResult();
     SlimFailure failure = exception.failure();
-    boolean assertion = failure.kind() == SlimFailure.Kind.EXCEPTION
-      || execution == ExecutionResult.IGNORE || execution == ExecutionResult.FAIL;
-    String status = assertion ? (execution == null ? "error" : execution.toString()) : null;
+    boolean assertion = counted(failure.kind());
+    String status = assertion ? execution.toString() : null;
     return new CellRecord(status, null, null, failure, null, null, assertion, !assertion);
+  }
+
+  /** A missing fixture or a dead Slim server is a broken table. A thrown call is an exception. */
+  private static boolean counted(SlimFailure.Kind kind) {
+    return kind == SlimFailure.Kind.EXCEPTION || kind == SlimFailure.Kind.MISSING_METHOD;
   }
 
   public static CellRecord status(String status) {
@@ -144,7 +148,10 @@ public final class CellRecord {
     }
 
     private static Assignment read(String message) {
-      if (message == null || !message.startsWith("$") || !message.endsWith("]")) {
+      if (message == null) {
+        return null;
+      }
+      if (!message.startsWith("$") || !message.endsWith("]")) {
         return null;
       }
       int arrow = message.indexOf("<-[");

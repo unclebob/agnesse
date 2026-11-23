@@ -168,6 +168,25 @@ public class BlockJsonTest {
   }
 
   @Test
+  public void aMissingMethodIsAnExceptionEvenWhenAnotherCheckPasses() {
+    MarkdownTable table = MarkdownTable.parse("| script |\n| check | echo | ok | ok |\n| check | missing; | x | true |\n");
+    table.updateContent(3, 1, (SlimTestResult) SlimTestResult.pass("ok", "ok"));
+    table.updateContent(3, 2, new SlimExceptionResult("id",
+      "__EXCEPTION__:message:<<NO_METHOD_IN_CLASS missing[1] agnesse.fixtures.EchoFixture>>"));
+
+    JSONObject block = BlockJson.from(table);
+    JSONObject thrown = cell(block, 2, 3);
+    assertEquals("error", thrown.getString("status"));
+    assertEquals("MISSING_METHOD", thrown.getJSONObject("error").getString("kind"));
+    assertEquals(1, block.getJSONObject("counts").getInt("right"));
+    assertEquals(1, block.getJSONObject("counts").getInt("exceptions"));
+    assertEquals(0, block.getJSONObject("counts").getInt("wrong"));
+    JSONObject counts = PageCounts.counts(new JSONArray().put(block));
+    assertEquals("error", PageCounts.status("MissingMethod", counts));
+    assertEquals(1, counts.getInt("exceptions"));
+  }
+
+  @Test
   public void aNestedTableFailureStillCountsOnThePage() {
     MarkdownTable parent = MarkdownTable.parse("| script |\n| call |\n");
     MarkdownTable broken = MarkdownTable.parse("| script | Missing |\n");
