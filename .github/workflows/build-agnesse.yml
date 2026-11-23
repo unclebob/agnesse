@@ -5,6 +5,9 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
 
     strategy:
       matrix:
@@ -19,11 +22,12 @@ jobs:
           distribution: 'zulu'
           java-version: ${{ matrix.java-version }}
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version: '1.22'
+          cache: false
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Set up Rust
@@ -59,5 +63,4 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           files: build/test-results/test/*.xml
-          check_run: false
           comment_mode: off
