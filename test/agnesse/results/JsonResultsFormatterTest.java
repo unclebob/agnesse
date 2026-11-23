@@ -10,6 +10,7 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.LongSupplier;
@@ -17,6 +18,7 @@ import java.util.function.LongSupplier;
 import static net.javacrumbs.jsonunit.JsonAssert.assertJsonEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 public class JsonResultsFormatterTest {
@@ -201,11 +203,11 @@ public class JsonResultsFormatterTest {
     formatter.finish();
 
     String body = out.toString();
-    assertTrue(body, body.contains("\"summary\":\"2 right, 1 wrong, 1 ignored, 1 exceptions\""));
+    assertTrue(body, body.contains("\"summary\":\"2 right, 1 wrong, 1 ignored, 2 exceptions\""));
     assertFalse(body, body.contains("kept"));
     assertEquals(0L, formatter.document().getJSONObject("run").getLong("durationMillis"));
     assertTrue(body, body.contains("\"assertions\":\"0 right, 0 wrong, 0 ignored, 2 exceptions\""));
-    assertTrue(body, body.contains("\"summary\":\"2 right, 1 wrong, 1 ignored, 1 exceptions\",\"event\":\"run-done\",\"status\":\"error\""));
+    assertTrue(body, body.contains("\"summary\":\"2 right, 1 wrong, 1 ignored, 2 exceptions\",\"event\":\"run-done\",\"status\":\"error\""));
     assertEquals(1, count(body, "\"event\":\"output\""));
     assertTrue(body, body.contains("\"text\":\"Bad table! missing\""));
     assertTrue(body, body.contains("\"durationMillis\":0"));
@@ -222,6 +224,52 @@ public class JsonResultsFormatterTest {
     formatter.finish();
     assertEquals("SuitePage", formatter.document().getJSONObject("run").getString("name"));
     assertTrue(out.toString(), out.toString().contains("\"summary\":\"1 right, 0 wrong, 0 ignored, 0 exceptions\",\"event\":\"run-done\",\"status\":\"pass\""));
+  }
+
+  @Test
+  public void aBlankRunIdAndANamelessSystemStayBlank() throws Exception {
+    JsonResultsFormatter formatter = new JsonResultsFormatter(new StringBuilder(), false, null);
+    formatter.setRunId(null);
+    formatter.testSystemStarted(new agnesse.testsystems.TestSystem() {
+      public String getName() { return null; }
+      public void start() {}
+      public void bye() {}
+      public void kill() {}
+      public void runTests(TestPage page) {}
+      public void addTestSystemListener(agnesse.testsystems.TestSystemListener listener) {}
+      public boolean isSuccessfullyStarted() { return true; }
+    });
+    formatter.testStarted(page("Named"));
+    formatter.finish();
+    assertEquals("", formatter.document().getJSONObject("run").getString("id"));
+    assertEquals("", formatter.events().get(0).getString("system"));
+  }
+
+  @Test
+  public void aStreamThatCannotBeWrittenStopsTheRun() {
+    JsonResultsFormatter formatter = new JsonResultsFormatter(new Appendable() {
+      public Appendable append(CharSequence csq) throws IOException { throw new IOException("full"); }
+      public Appendable append(CharSequence csq, int start, int end) throws IOException { throw new IOException("full"); }
+      public Appendable append(char c) throws IOException { throw new IOException("full"); }
+    }, true, null);
+    assertThrows(IllegalStateException.class, () -> formatter.announceNumberTestsToRun(1));
+  }
+
+  @Test
+  public void aPassingScenarioCheckIsCountedWhenThePageAlsoFails() throws Exception {
+    StringBuilder out = new StringBuilder();
+    JsonResultsFormatter formatter = new JsonResultsFormatter(out, true, null);
+    TestPage page = page("ScenarioColors");
+    formatter.testStarted(page);
+    formatter.tableFinished(page, scenarioCalls());
+    formatter.testComplete(page, new TestSummary(0, 0, 0, 0));
+    formatter.finish();
+
+    String body = out.toString();
+    assertTrue(body, body.contains("\"summary\":\"1 right, 1 wrong, 0 ignored, 0 exceptions\""));
+    JSONObject counts = formatter.document().getJSONObject("run").getJSONObject("counts");
+    assertEquals(1, counts.getInt("right"));
+    assertEquals(1, counts.getInt("wrong"));
   }
 
   @Test
@@ -277,6 +325,21 @@ public class JsonResultsFormatterTest {
     formatter.testStarted(page);
     formatter.tableFinished(page, table);
     formatter.testComplete(page, new TestSummary(0, 0, 0, 0));
+  }
+
+  private static agnesse.testsystems.slim.MarkdownTable scenarioCalls() {
+    agnesse.testsystems.slim.MarkdownTable parent = agnesse.testsystems.slim.MarkdownTable.parse("| script |\n| passes |\n| fails |\n");
+    parent.appendChildTable(1, judged("ok", "ok", true));
+    parent.appendChildTable(2, judged("ok", "no", false));
+    return parent;
+  }
+
+  private static agnesse.testsystems.slim.MarkdownTable judged(String actual, String expected, boolean pass) {
+    agnesse.testsystems.slim.MarkdownTable table = agnesse.testsystems.slim.MarkdownTable.parse("| script |\n| check | echo |\n");
+    table.updateContent(1, 1, pass
+      ? (agnesse.testsystems.slim.results.SlimTestResult) agnesse.testsystems.slim.results.SlimTestResult.pass(actual, expected)
+      : agnesse.testsystems.slim.results.SlimTestResult.fail(actual, expected));
+    return table;
   }
 
   private static agnesse.testsystems.slim.MarkdownTable passTable() {

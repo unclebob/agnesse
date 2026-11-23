@@ -4,7 +4,7 @@
   "help": null,
   "prune": false
 }
-If a `SuiteSetUp` or `SuiteTearDown` page is executed without errors, it should be counted as a correctly executed page.
+If a `SuiteSetUp` or `SuiteTearDown` page is executed without errors, it is a passing page. The run summary counts assertions, so the two `ensure` checks are the two rights.
 
 | Library |
 | --- |
@@ -28,6 +28,6 @@ For normal (HTML) responses:
 | --- |
 | check | request page | SuiteParent?suite&format=json | 200 |
 | show | content |
-| ensure | content contains | 4 right, 0 wrong, 0 ignored, 0 exceptions |
-| ensure | content contains | SuiteParent.SuiteSetUp |
-| ensure | content contains | SuiteParent.SuiteTearDown |
+| ensure | content contains | 2 right, 0 wrong, 0 ignored, 0 exceptions |
+| ensure | content matches | "path":"SuiteParent.SuiteSetUp".{0,300}"status":"pass" |
+| ensure | content matches | "path":"SuiteParent.SuiteTearDown".{0,300}"status":"pass" |

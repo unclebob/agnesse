@@ -180,10 +180,7 @@ public class JsonResultsFormatter extends BaseFormatter implements TableFinished
       out.append(document.toString(2));
       out.append("\n");
     } else {
-      int[] pages = pageTally();
-      String summary = pages[0] + " right, " + pages[1] + " wrong, " + pages[2] + " ignored, " + pages[3] + " exceptions";
-      String status = pages[3] > 0 ? "error" : pages[1] > 0 ? "fail" : "pass";
-      record(new JSONObject().put("event", "run-done").put("summary", summary).put("status", status));
+      record(runDone(document));
     }
     writeFailures(document);
   }
@@ -221,6 +218,13 @@ public class JsonResultsFormatter extends BaseFormatter implements TableFinished
     int exceptions = counts.getInt("exceptions") + counts.getInt("tableFailures");
     return counts.getInt("right") + " right, " + counts.getInt("wrong") + " wrong, "
       + counts.getInt("ignored") + " ignored, " + exceptions + " exceptions";
+  }
+
+  private JSONObject runDone(JSONObject document) {
+    int[] pages = pageTally();
+    String status = pages[3] > 0 ? "error" : pages[1] > 0 ? "fail" : "pass";
+    String summary = assertionSummary(document.getJSONObject("run").getJSONObject("counts"));
+    return new JSONObject().put("event", "run-done").put("summary", summary).put("status", status);
   }
 
   private int[] pageTally() {
