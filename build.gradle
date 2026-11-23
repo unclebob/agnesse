@@ -407,7 +407,11 @@ jar {
   dependsOn createUpdateLists
   into('Resources') {
     from('.') {
-      include createUpdateLists.wikiFiles as String[]
+      include { details ->
+        def path = details.relativePath.pathString
+        def listed = createUpdateLists.wikiFiles
+        details.directory ? listed.any { it == path || it.startsWith(path + '/') } : listed.contains(path)
+      }
     }
   }
   duplicatesStrategy = 'exclude'

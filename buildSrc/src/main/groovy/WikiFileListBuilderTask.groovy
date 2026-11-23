@@ -2,7 +2,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.*
 
 public class WikiFileListBuilderTask extends DefaultTask {
-  @InputFiles
+  @Internal
   Closure<Collection<String>> filesClosure
 
   private Collection<String> doNotReplaceFiles
