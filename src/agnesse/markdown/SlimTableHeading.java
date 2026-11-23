@@ -18,7 +18,6 @@ public final class SlimTableHeading {
     Map.entry("subset query", "subset-query"),
     Map.entry("table", "table"),
     Map.entry("script", "script"),
-    Map.entry("verify script", "verify-script"),
     Map.entry("scenario", "scenario"),
     Map.entry("import", "import"),
     Map.entry("library", "library"),

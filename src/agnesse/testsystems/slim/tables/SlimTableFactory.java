@@ -34,7 +34,6 @@ public class SlimTableFactory {
     addTableType("table", TableTable.class);
     addTableType("script", ScriptTable.class);
     addTableType("script:", ScriptTable.class);
-    addTableType("verify script", ScriptTableWithVerify.class);
     addTableType("scenario", ScenarioTable.class);
     addTableType("import", ImportTable.class);
     addTableType("library", LibraryTable.class);
@@ -170,14 +169,6 @@ public class SlimTableFactory {
 
     private TableTypeAndName(final String[] typeAndName) {
       this(typeAndName[0], typeAndName.length > 1 ? typeAndName[1] : "");
-    }
-
-    private boolean hasTableType(final String name) {
-      return tableType.equalsIgnoreCase(name);
-    }
-
-    private boolean hasTableName(final String name) {
-      return tableName.equalsIgnoreCase(name);
     }
 
     private boolean mayBeDecisionTable() {

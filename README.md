@@ -394,15 +394,6 @@ Cells alternate between method-name fragments and arguments: `| check | return c
 
 That calls `concatenateThreeArgs("1", "2.0", "three")`. Mixing every-other-cell and sequential processing in one row is allowed.
 
-### Verify script
-
-`verify script` is a script table whose check keyword is `verify` instead of `check`. Use it when a scenario should say `verify` so a later decision table that calls that scenario uses the same keyword.
-
-```
-| verify script | agnesse.slim.test.Division |
-| --- | --- |
-```
-
 ### Scenario
 
 A scenario is a reusable script fragment. It does not run where it is defined. A later script row or decision table with that name runs the body, substituting `@parameter`.

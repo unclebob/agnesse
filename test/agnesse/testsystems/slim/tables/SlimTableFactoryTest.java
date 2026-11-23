@@ -135,6 +135,29 @@ public class SlimTableFactoryTest {
     when(table.getCellContents(0, 0)).thenReturn("Division");
     SlimTable blank = slimTableFactory.makeSlimTable(table, "0", context());
     assertEquals("Division", blank.getFixtureName());
+
+    slimTableFactory.addAlias("PlainAlias", "JustRenamed");
+    when(table.getCellContents(0, 0)).thenReturn("PlainAlias");
+    SlimTable plain = slimTableFactory.makeSlimTable(table, "0", context());
+    assertThat(plain, instanceOf(DecisionTable.class));
+    assertEquals("JustRenamed", plain.getFixtureName());
+
+    slimTableFactory.addAlias("ColonType", ":KeptName");
+    when(table.getCellContents(0, 0)).thenReturn("ColonType");
+    SlimTable colon = slimTableFactory.makeSlimTable(table, "0", context());
+    assertEquals("KeptName", colon.getFixtureName());
+
+    slimTableFactory.addDefaultTableType("SpecialFixture", "query");
+    when(table.getCellContents(0, 0)).thenReturn("SpecialFixture");
+    SlimTable special = slimTableFactory.makeSlimTable(table, "0", context());
+    assertThat(special, instanceOf(QueryTable.class));
+
+    when(table.getCellContents(0, 0)).thenReturn("");
+    assertThat(slimTableFactory.makeSlimTable(table, "0", context()), instanceOf(SlimErrorTable.class));
+
+    slimTableFactory.addTableType("broken", NoMatchingConstructor.class);
+    when(table.getCellContents(0, 0)).thenReturn("broken");
+    assertThat(slimTableFactory.makeSlimTable(table, "0", context()), instanceOf(SlimErrorTable.class));
   }
 
   private SlimTestContextImpl context() {

@@ -16,6 +16,13 @@ public class SlimTableHeadingTest {
   }
 
   @Test
+  public void aMissingHeaderIsADecisionTableWithNoName() {
+    SlimTableHeading heading = SlimTableHeading.parse(null);
+    assertEquals("decision", heading.type());
+    assertEquals("", heading.name());
+  }
+
+  @Test
   public void aBareNameIsADecisionTable() {
     SlimTableHeading heading = SlimTableHeading.parse("Division");
     assertEquals("decision", heading.type());
