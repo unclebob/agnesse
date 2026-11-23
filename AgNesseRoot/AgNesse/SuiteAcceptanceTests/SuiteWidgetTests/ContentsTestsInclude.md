@@ -26,5 +26,5 @@
 | --- | --- |
 | check | request page | ParentPage.FirstChild | 200 |
 | ensure | content contains | I came first! |
-| check | page has attribute | ParentPage.FirstChild | Test | true |
-| check | page has attribute | ParentPage.SecondChild | Prune | true |
+| check | page has attribute; | ParentPage.FirstChild | Suite | true |
+| check | page has attribute; | ParentPage.SecondChild | Prune | true |

@@ -26,5 +26,5 @@
 | --- | --- |
 | check | request page | ParentPage.FirstChild | 200 |
 | ensure | content contains | I came first! |
-| check | page has attribute | ParentPage.FirstChild | Help | true |
+| check | page has attribute; | ParentPage.FirstChild | Help | true |
 | ensure | source contains; | ParentPage.SecondChild | I'm younger, but wiser |
