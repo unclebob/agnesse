@@ -181,7 +181,7 @@ public class MarkdownPage extends BaseWikiPage implements FileBasedWikiPage {
 
   private String render(String content) {
     return MarkdownRenderer.render(expand(TableSeparators.supply(escapeWikiPrefixes(content))), this::wikiWordTarget,
-      contentsLinks(), this::includedHtml, WikiPageUtil.rendersSlimTables(this));
+      contentsLinks(), this::includedHtml, WikiPageUtil.rendersSlimTables(this), ScenarioView.collect(this));
   }
 
   private IncludedPage includedHtml(String name) {

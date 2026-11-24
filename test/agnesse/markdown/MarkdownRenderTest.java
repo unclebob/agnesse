@@ -12,6 +12,11 @@ import static org.junit.Assert.assertTrue;
 public class MarkdownRenderTest {
 
   @Test
+  public void aNullMarkdownRendersNoText() {
+    assertEquals("", MarkdownRenderer.render((String) null).trim());
+  }
+
+  @Test
   public void aStaticCallRendersATableAsATable() {
     String table = "| a |\n| --- |\n| b |\n";
     assertPlainTable(MarkdownRenderer.render(table));
@@ -68,10 +73,14 @@ public class MarkdownRenderTest {
     assertGolden("wiki-word");
     String linked = MarkdownRenderer.render("Open FrontPage.\n", word -> "FrontPage".equals(word));
     assertEquals("<p>Open <a href=\"FrontPage\">FrontPage</a>.</p>\n", linked);
+    String absent = MarkdownRenderer.render("Open FrontPage.\n");
+    assertTrue(absent.contains("nonExistent=true"));
     String code = MarkdownRenderer.render("Use `FrontPage` literally.\n");
     assertEquals("<p>Use <code>FrontPage</code> literally.</p>\n", code);
     String explicit = MarkdownRenderer.render("[FrontPage](FrontPage)\n");
     assertTrue(explicit.contains("href=\"FrontPage\""));
+    String resolved = MarkdownRenderer.render("[FrontPage](FrontPage)\n", word -> true);
+    assertTrue(resolved.contains("href=\"FrontPage\""));
     assertFalse(explicit.contains("nonExistent"));
   }
 

@@ -44,7 +44,12 @@ public final class MarkdownRenderer {
 
   public static String render(String markdown, Function<String, String> pageTarget, List<ContentsLink> children,
                               Function<String, IncludedPage> includedHtml, boolean testPage) {
-    return render(markdown, null, children, includedHtml, pageTarget, testPage);
+    return render(markdown, pageTarget, children, includedHtml, testPage, ScenarioView.empty());
+  }
+
+  static String render(String markdown, Function<String, String> pageTarget, List<ContentsLink> children,
+                       Function<String, IncludedPage> includedHtml, boolean testPage, ScenarioView scenarios) {
+    return render(markdown, null, children, includedHtml, pageTarget, testPage, scenarios);
   }
 
   private static String render(String markdown, Predicate<String> pageExists, List<ContentsLink> children,
@@ -55,18 +60,24 @@ public final class MarkdownRenderer {
   private static String render(String markdown, Predicate<String> pageExists, List<ContentsLink> children,
                               Function<String, IncludedPage> includedHtml, Function<String, String> pageTarget,
                               boolean testPage) {
+    return render(markdown, pageExists, children, includedHtml, pageTarget, testPage, ScenarioView.empty());
+  }
+
+  private static String render(String markdown, Predicate<String> pageExists, List<ContentsLink> children,
+                              Function<String, IncludedPage> includedHtml, Function<String, String> pageTarget,
+                              boolean testPage, ScenarioView scenarios) {
     return DetailsRegions.render(markdown == null ? "" : markdown,
-      chunk -> renderChunk(chunk, pageExists, children, includedHtml, pageTarget, testPage));
+      chunk -> renderChunk(chunk, pageExists, children, includedHtml, pageTarget, testPage, scenarios));
   }
 
   private static String renderChunk(String markdown, Predicate<String> pageExists, List<ContentsLink> children,
                                     Function<String, IncludedPage> includedHtml, Function<String, String> pageTarget,
-                                    boolean testPage) {
+                                    boolean testPage, ScenarioView scenarios) {
     Parser parser = Parser.builder().extensions(EXTENSIONS).build();
     Set<String> headingIds = new HashSet<>();
     RenderState state = new RenderState();
     HtmlRenderer html = HtmlRenderer.builder()
-      .nodeRendererFactory(context -> new SlimTableRenderer(context, testPage, state))
+      .nodeRendererFactory(context -> new SlimTableRenderer(context, testPage, state, scenarios))
       .extensions(EXTENSIONS)
       .nodeRendererFactory(context -> new WikiWordNodeRenderer(context,
         pageTarget != null ? pageTarget : word -> pageExists.test(word) ? word : null, state))
@@ -75,6 +86,6 @@ public final class MarkdownRenderer {
       .nodeRendererFactory(context -> new HeadingRenderer(context, headingIds))
       .nodeRendererFactory(context -> new AgNesseBlockRenderer(context, children, includedHtml))
       .build();
-    return html.render(parser.parse(markdown == null ? "" : markdown));
+    return html.render(parser.parse(markdown));
   }
 }
