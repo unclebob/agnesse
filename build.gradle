@@ -10,15 +10,6 @@
  - Move file creation to plugin
 */
 
-buildscript {
-    repositories {
-      mavenCentral()
-    }
-    dependencies {
-        classpath 'info.solidsoft.gradle.pitest:gradle-pitest-plugin:1.19.0'
-    }
-}
-
 plugins {
   id 'java'
   id "maven-publish"
@@ -26,7 +17,6 @@ plugins {
   id 'signing'
   id "io.github.ben-manes.versions" version "0.67.0"
   id "groovy"
-  id "info.solidsoft.pitest" version "1.19.0"
   id 'jacoco'
 }
 
@@ -388,13 +378,6 @@ task verifyNoIgnoredTests {
 }
 
 check.dependsOn jacocoTestCoverageVerification, verifyRemoved, verifyNoIgnoredTests
-
-pitest {
-  targetClasses = ['fit.*', 'agnesse.*']
-  pitestVersion = "1.30.1"
-  threads = 1 // We can not deal with parallel execution yet
-  outputFormats = ['XML', 'HTML']
-}
 
 task run(type: JavaExec) {
   dependsOn classes, copyRuntimeLibs
