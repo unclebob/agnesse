@@ -107,7 +107,7 @@ public class MarkdownPageTest {
       {
         "type": "test-adjunct"
       }
-      | SetUp |
+      | StartTestAgNesse |
       | --- |
 
       | Comment |
@@ -120,8 +120,8 @@ public class MarkdownPageTest {
 
     assertFalse(page.getData().hasAttribute("Test"));
     assertFalse(page.getData().hasAttribute("Suite"));
-    assertTrue(html, html.contains("data-slim=\"SetUp\""));
-    assertFalse(html, html.contains(">SetUp</a>"));
+    assertTrue(html, html.contains("data-slim=\"StartTestAgNesse\""));
+    assertFalse(html, html.contains(">StartTestAgNesse</a>"));
     assertTrue(html, html.contains(">SuiteWidgetTests</a>"));
     assertFalse(html, html.contains("data-slim=\"Comment\""));
   }

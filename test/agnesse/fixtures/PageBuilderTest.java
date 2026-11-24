@@ -13,7 +13,7 @@ public class PageBuilderTest {
 
   @Before
   public void setUp() throws Exception {
-    new SetUp();
+    new StartTestAgNesse();
   }
 
   @After

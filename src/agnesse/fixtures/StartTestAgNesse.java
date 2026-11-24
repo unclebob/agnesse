@@ -13,16 +13,16 @@ import util.FileUtil;
 
 import static agnesse.fixtures.AgNesseFixtureContext.context;
 
-public class SetUp {
-  public SetUp() throws Exception {
+public class StartTestAgNesse {
+  public StartTestAgNesse() throws Exception {
     this(new Properties());
   }
 
-  public SetUp(String configuration) throws Exception {
+  public StartTestAgNesse(String configuration) throws Exception {
     this(asProperties(configuration));
   }
 
-  private SetUp(Properties properties) throws Exception {
+  private StartTestAgNesse(Properties properties) throws Exception {
     ServerSocket socket = new PlainServerSocketFactory().createServerSocket(0);
     int port = socket.getLocalPort();
     properties.setProperty("AGNESSE_PORT", String.valueOf(port));

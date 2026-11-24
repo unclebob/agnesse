@@ -123,7 +123,7 @@ public class UnclosedFenceReleasesPortTest {
       | --- |
       | agnesse.fixtures |
 
-      | SetUp |
+      | StartTestAgNesse |
       | --- |
       """);
     WikiPageUtil.addPage(root, PathParser.parse("TearDown"), """

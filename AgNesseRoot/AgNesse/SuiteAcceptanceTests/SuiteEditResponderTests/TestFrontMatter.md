@@ -67,7 +67,7 @@
 | check | page | FrontMatterParent.Helper | has attribute | Test | false |
 
 | script | page builder |
-| line | &bar; SetUp &bar; |
+| line | &bar; StartTestAgNesse &bar; |
 | line | &bar; --- &bar; |
 | markdown page | SetUp |
 
@@ -75,5 +75,5 @@
 | check | request page | SetUp?test | 400 |
 | ensure | content contains | does not run |
 | check | request page | SetUp | 200 |
-| ensure | content contains | data-slim="SetUp">SetUp</td> |
+| ensure | content contains | data-slim="StartTestAgNesse">StartTestAgNesse</td> |
 | reject | content contains | accesskey="t">Test |

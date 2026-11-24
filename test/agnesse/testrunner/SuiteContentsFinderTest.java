@@ -112,7 +112,7 @@ public class SuiteContentsFinderTest {
 
   @Test
   public void anIncludedPageIsNotCollectedEvenWhenItIsMarkedTest() {
-    WikiPage setUp = addTestPage(suite, "SetUp", "| SetUp |\n");
+    WikiPage setUp = addTestPage(suite, "SetUp", "| StartTestAgNesse |\n");
     WikiPage library = addTestPage(suite, "ScenarioLibrary", "library");
     WikiPage header = addTestPage(suite, "PageHeader", "header");
 

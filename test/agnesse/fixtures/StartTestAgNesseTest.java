@@ -10,10 +10,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 /**
- * SetUp starts a wiki server for a suite. Two of them, in two test runs at once,
+ * StartTestAgNesse starts a wiki server for a suite. Two of them, in two test runs at once,
  * must not fight over one port, and AGNESSE_PORT must name the port actually bound.
  */
-public class SetUpTest {
+public class StartTestAgNesseTest {
   private AgNesseContext first;
 
   @After
@@ -23,10 +23,10 @@ public class SetUpTest {
   }
 
   @Test
-  public void twoSetUpsRunAtOnceEachGetTheirOwnPort() throws Exception {
-    new SetUp();
+  public void twoServersRunAtOnceEachGetTheirOwnPort() throws Exception {
+    new StartTestAgNesse();
     first = AgNesseFixtureContext.context;
-    new SetUp();
+    new StartTestAgNesse();
     AgNesseContext second = AgNesseFixtureContext.context;
 
     assertNotEquals(first.port, second.port);
@@ -37,9 +37,17 @@ public class SetUpTest {
   }
 
   @Test
-  public void pagesCanAskForThePortSetUpBound() throws Exception {
-    new SetUp();
+  public void pagesCanAskForThePortThatWasBound() throws Exception {
+    new StartTestAgNesse();
 
     assertEquals(AgNesseFixtureContext.context.port, new PageDriver().agnessePort());
+  }
+
+  @Test
+  public void aConfigurationStringIsLoadedOntoTheServer() throws Exception {
+    new StartTestAgNesse("CUSTOM=yes");
+
+    assertEquals("yes", AgNesseFixtureContext.context.getProperty("CUSTOM"));
+    assertEquals(String.valueOf(AgNesseFixtureContext.context.port), AgNesseFixtureContext.context.getProperty("AGNESSE_PORT"));
   }
 }
